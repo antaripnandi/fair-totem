@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "fairtotem",
+  "version": "${version}",
+  "name": "Fair Totem",
+  "description": "Totem of Undying works from anywhere in your inventory — no hand slot required.",
+  "authors": [
+    "Antarip Nandi"
+  ],
+  "contact": {
+    "homepage": "https://modrinth.com/mod/fair-totem",
+    "sources": "https://github.com/antaripnandi/fair-totem",
+    "issues": "https://github.com/antaripnandi/fair-totem/issues"
+  },
+  "license": "MIT",
+  "icon": "assets/fairtotem/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.antarip.fairtotem.FairTotemMod"
+    ]
+  },
+  "mixins": [
+    "fairtotem.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "${minecraft_version}"
+  }
+}
