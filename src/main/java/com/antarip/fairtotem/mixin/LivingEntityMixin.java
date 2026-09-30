@@ -43,12 +43,14 @@ public abstract class LivingEntityMixin {
         for (int i = 0; i < inv.getContainerSize(); i++) {
             ItemStack stack = inv.getItem(i);
             if (stack.is(Items.TOTEM_OF_UNDYING)) {
-                // Consume 1 totem from inventory
+                // Consume 1 totem from inventory (preserving components/custom name)
+                ItemStack totemCopy = stack.copy();
+                totemCopy.setCount(1);
                 stack.shrink(1);
 
-                // Save current offhand item and temporarily place a totem in offhand
+                // Save current offhand item and temporarily place the totem in offhand
                 fairtotem$restoredOffhand.set(player.getItemInHand(InteractionHand.OFF_HAND));
-                player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.TOTEM_OF_UNDYING, 1));
+                player.setItemInHand(InteractionHand.OFF_HAND, totemCopy);
                 return;
             }
         }
@@ -61,6 +63,13 @@ public abstract class LivingEntityMixin {
             fairtotem$restoredOffhand.remove();
             LivingEntity self = (LivingEntity) (Object) this;
             if (self instanceof Player player) {
+                // If protection did not succeed for any reason, restore the unconsumed totem to inventory
+                if (!cir.getReturnValue()) {
+                    ItemStack unconsumed = player.getItemInHand(InteractionHand.OFF_HAND);
+                    if (!player.getInventory().add(unconsumed)) {
+                        player.drop(unconsumed, false);
+                    }
+                }
                 // Restore player's original offhand item
                 player.setItemInHand(InteractionHand.OFF_HAND, oldOffhand);
             }
