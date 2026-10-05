@@ -4,6 +4,7 @@ import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -18,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class LivingEntityMixin {
 
     @Unique
-    private static final ThreadLocal<ItemStack> fairtotem$restoredOffhand = new ThreadLocal<>();
+    private ItemStack fairtotem$savedOffhand = null;
 
     @Inject(method = "checkTotemDeathProtection", at = @At("HEAD"))
     private void fairtotem$prepareInventoryTotem(DamageSource source, CallbackInfoReturnable<Boolean> cir) {
@@ -49,7 +50,7 @@ public abstract class LivingEntityMixin {
                 stack.shrink(1);
 
                 // Save current offhand item and temporarily place the totem in offhand
-                fairtotem$restoredOffhand.set(player.getItemInHand(InteractionHand.OFF_HAND));
+                this.fairtotem$savedOffhand = player.getItemInHand(InteractionHand.OFF_HAND);
                 player.setItemInHand(InteractionHand.OFF_HAND, totemCopy);
                 return;
             }
@@ -58,16 +59,17 @@ public abstract class LivingEntityMixin {
 
     @Inject(method = "checkTotemDeathProtection", at = @At("RETURN"))
     private void fairtotem$cleanupInventoryTotem(DamageSource source, CallbackInfoReturnable<Boolean> cir) {
-        ItemStack oldOffhand = fairtotem$restoredOffhand.get();
-        if (oldOffhand != null) {
-            fairtotem$restoredOffhand.remove();
+        if (this.fairtotem$savedOffhand != null) {
+            ItemStack oldOffhand = this.fairtotem$savedOffhand;
+            this.fairtotem$savedOffhand = null;
             LivingEntity self = (LivingEntity) (Object) this;
             if (self instanceof Player player) {
                 // If protection did not succeed for any reason, restore the unconsumed totem to inventory
                 if (!cir.getReturnValue()) {
                     ItemStack unconsumed = player.getItemInHand(InteractionHand.OFF_HAND);
                     if (!player.getInventory().add(unconsumed)) {
-                        player.drop(unconsumed, false);
+                        ItemEntity entity = new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(), unconsumed);
+                        player.level().addFreshEntity(entity);
                     }
                 }
                 // Restore player's original offhand item
